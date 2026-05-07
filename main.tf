@@ -19,64 +19,15 @@ provider "google" {
   zone = ""
 }
 
-resource "google_compute_network" "tf_vpc" {
-  name                    = "terraform-secondary-vpc"
-  auto_create_subnetworks = false
-}
-
-resource "google_compute_subnetwork" "tf_subnet" {
-  name          = "terraform-secondary-subnet"
-  ip_cidr_range = "10.20.1.0/24"
-  region        = "us-central1"
-  network       = google_compute_network.tf_vpc.id
-}
-
-resource "google_compute_address" "tf_public_ip" {
-  name   = "terraform-secondary-public-ip"
-  region = "us-central1"
-}
-
-resource "google_compute_firewall" "tf_allow_ssh" {
-  name    = "terraform-secondary-allow-ssh"
-  network = google_compute_network.tf_vpc.name
-
-  allow {
-    protocol = "tcp"
-    ports    = ["22"]
-  }
-
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["allow-ssh"]
-}
-
-resource "google_compute_instance" "tf_vm" {
-  # TODO 3: Give the VM a unique name
+resource "google_storage_bucket" "tf_bucket" {
+  # TODO 3: Give the bucket a globally unique name
   name = ""
 
-  machine_type = "e2-micro"
+  location = "US"
 
-  tags = ["allow-ssh"]
+  storage_class = "STANDARD"
 
-  boot_disk {
-    initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
-    }
-  }
-
-  network_interface {
-    subnetwork = google_compute_subnetwork.tf_subnet.id
-
-    access_config {
-      nat_ip = google_compute_address.tf_public_ip.address
-    }
-  }
-
-  metadata = {
-    startup-script = <<-EOT
-      #!/bin/bash
-      sudo apt-get update
-    EOT
-  }
+  uniform_bucket_level_access = true
 
   labels = {
     environment = "lab"
@@ -84,7 +35,12 @@ resource "google_compute_instance" "tf_vm" {
   }
 }
 
-output "public_ip_address" {
-  description = "Public IP address of the Terraform-created VM"
-  value       = google_compute_address.tf_public_ip.address
+output "bucket_name" {
+  description = "Name of the Terraform-created Cloud Storage bucket"
+  value       = google_storage_bucket.tf_bucket.name
+}
+
+output "bucket_url" {
+  description = "URL of the Terraform-created Cloud Storage bucket"
+  value       = google_storage_bucket.tf_bucket.url
 }
